@@ -95,7 +95,11 @@ for cond in cond_day2_FB.keys():
     cond_day2_FB[cond]=pd.Panel(cond_day2_FB[cond])
 
 
-regions=['bankssts-lh + superiortemporal-lh','bankssts-rh + superiortemporal-rh' ] 
+#region='bankssts-rh + superiortemporal-rh'
+
+#revision 1 chage to bankssts
+region='bankssts-rh'   
+   
 
 cond1_mean=dict()
 cond2_mean=dict()
@@ -105,47 +109,33 @@ cond1_std=dict()
 cond2_std=dict()
 cond3_std=dict()
 
+cond_export=dict()
 
 for day, phase ,cond_list in zip(['/D1/','/D1/','/D1/','/D2/'],['0','1','2','0'],[cond_day1_AV,cond_day1_AV,cond_day1_AV,cond_day2_AV]):
- 
+    
+    #change condition to either Learning or Testing
     cond1='IDX/Learning/LB/AVC'.replace('IDX','IDX'+phase)   
     cond2='IDX/Learning/LB/AVI'.replace('IDX','IDX'+phase) 
     cond3='IDX/Learning/UB/AVX'.replace('IDX','IDX'+phase) 
-        
-    cond1_mean[day+cond1]=cond_list[cond1][:,0.5:0.8,regions].mean(axis=0).mean(axis=0).mean(axis=0)  
-    cond2_mean[day+cond2]=cond_list[cond2][:,0.5:0.8,regions].mean(axis=0).mean(axis=0).mean(axis=0)  
-    cond3_mean[day+cond3]=cond_list[cond3][:,0.5:0.8,regions].mean(axis=0).mean(axis=0).mean(axis=0)  
+   
+    cond1_mean[day+cond1]=cond_list[cond1][:,0.5:0.8,region].mean(axis=0).mean(axis=0)  
+    cond2_mean[day+cond2]=cond_list[cond2][:,0.5:0.8,region].mean(axis=0).mean(axis=0)  
+    cond3_mean[day+cond3]=cond_list[cond3][:,0.5:0.8,region].mean(axis=0).mean(axis=0)  
+
+    cond1_std[day+cond1]=cond_list[cond1][:,0.5:0.8,region].mean(axis=0).std(axis=0)/np.sqrt(cond_list[cond1].shape[0])  
+    cond2_std[day+cond2]=cond_list[cond2][:,0.5:0.8,region].mean(axis=0).std(axis=0)/np.sqrt(cond_list[cond2].shape[0])   
+    cond3_std[day+cond3]=cond_list[cond3][:,0.5:0.8,region].mean(axis=0).std(axis=0)/np.sqrt(cond_list[cond3].shape[0]) 
     
-    cond1_std[day+cond1]=cond_list[cond1][:,0.5:0.8,regions].mean(axis=1).mean(axis=0).std(axis=0)/np.sqrt(cond_list[cond1].shape[0])  
-    cond2_std[day+cond2]=cond_list[cond2][:,0.5:0.8,regions].mean(axis=1).mean(axis=0).std(axis=0)/np.sqrt(cond_list[cond2].shape[0])   
-    cond3_std[day+cond3]=cond_list[cond3][:,0.5:0.8,regions].mean(axis=1).mean(axis=0).std(axis=0)/np.sqrt(cond_list[cond3].shape[0]) 
+    cond_export[day+cond1]=cond_list[cond1][:,0.5:0.8,region].mean(axis=0)
+    cond_export[day+cond2]=cond_list[cond2][:,0.5:0.8,region].mean(axis=0)
+    cond_export[day+cond3]=cond_list[cond3][:,0.5:0.8,region].mean(axis=0)
 
-import matplotlib.pyplot as plt
-# set width of bar
-barWidth = 0.25
-f = plt.figure()
-f.set_size_inches((6, 4)) 
-# set height of bar
-bars1 = list(cond1_mean.values())
-bars2 = list(cond2_mean.values())
-bars3 = list(cond3_mean.values())
- 
-# Set position of bar on X axis
-r1 = np.array([1,2,3,4])
-r2 = [x + barWidth for x in r1]
-r3 = [x + barWidth for x in r2]
- 
-# Make the plot
-plt.bar(r1, bars1, color='#fc8d59', width=barWidth, edgecolor='white', label='AVC',yerr=list(cond1_std.values()))
-plt.bar(r2, bars2, color='#5ab4ac', width=barWidth, edgecolor='white', label='AVI',yerr=list(cond2_std.values()))
-plt.bar(r3, bars3, color='#91bfdb', width=barWidth, edgecolor='white', label='AVX',yerr=list(cond3_std.values()))
- 
-# Add xticks on the middle of the group bars
-plt.xlabel('Training', fontweight='bold')
-plt.ylabel('dSPM value')
-plt.xticks([r + barWidth for r in np.array([1,2,3,4])], ['D1:0', 'D1:1-4', 'D1:>4','D2'])
 
-plt.ylim([0,4.2])
-# Create legend & Show graphic
-plt.legend()
-plt.show()
+for cond_key, cond_values in cond_export.items():
+    cond_values.to_csv((cond_key+'/'+region+'.csv').replace('/','_'))
+
+df_mean=pd.DataFrame([cond1_mean.values(),cond2_mean.values(),cond3_mean.values()],index=['AVC','AVI','AVX'],columns=['D1/0','D1/1','D1/2','D2/0',]).transpose()
+df_std =pd.DataFrame([cond1_std.values(),cond2_std.values(),cond3_std.values()],index=['AVC','AVI','AVX'],columns=['D1/0','D1/1','D1/2','D2/0',]).transpose()
+
+df_mean.plot(kind='bar',legend=True,yerr=df_std,title=region)
+
